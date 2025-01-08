@@ -1,0 +1,61 @@
+# Step 1: Import necessary libraries
+import pandas as pd
+import numpy as np
+import re
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.model_selection import cross_val_score
+
+# Step 2: Load and prepare the dataset (replace with your own dataset)
+# Assuming the data has two columns: 'Text' (the sentence) and 'Sentiment' (target labels: 'positive', 'negative', 'neutral')
+df = pd.read_csv("sentiment_data.csv")
+
+# Step 3: Data Preprocessing
+# Cleaning the text data (removing special characters, digits, etc.)
+def clean_text(text):
+    text = re.sub(r'[^a-zA-Z\s]', '', text)  # Remove non-alphabetic characters
+    text = text.lower()  # Convert to lowercase
+    text = text.strip()  # Remove extra spaces
+    return text
+
+df['Cleaned_Text'] = df['Text'].apply(clean_text)
+
+# Step 4: Text Vectorization using TF-IDF
+X = df['Cleaned_Text']
+y = df['Sentiment']  # Assuming labels are 'positive', 'negative', 'neutral'
+
+# Convert text data to numerical format using TF-IDF Vectorizer
+vectorizer = TfidfVectorizer(max_features=5000)  # Limit the number of features
+X_tfidf = vectorizer.fit_transform(X)
+
+# Step 5: Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.2, random_state=42)
+
+# Step 6: Model Training (Random Forest Classifier)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Step 7: Model Evaluation on Test Data
+y_pred = model.predict(X_test)
+
+# Step 8: Calculate Metrics: Accuracy, Precision, Recall, F1-score
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, average='weighted')  # For multi-class classification
+recall = recall_score(y_test, y_pred, average='weighted')
+f1 = f1_score(y_test, y_pred, average='weighted')
+
+# Step 9: Print Evaluation Results
+print(f"Accuracy: {accuracy*100:.2f}%")
+print(f"Precision: {precision*100:.2f}%")
+print(f"Recall: {recall*100:.2f}%")
+print(f"F1-Score: {f1*100:.2f}%")
+
+# Confusion Matrix (optional but useful for understanding classification errors)
+cm = confusion_matrix(y_test, y_pred)
+print("Confusion Matrix:\n", cm)
+
+# Step 10: Cross-validation (optional, for model validation)
+cv_scores = cross_val_score(model, X_tfidf, y, cv=5)
+print(f"Cross-validation Accuracy: {cv_scores.mean()*100:.2f}%")
